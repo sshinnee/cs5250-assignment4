@@ -38,37 +38,61 @@ def FCFS_scheduling(process_list):
     return schedule, average_waiting_time
 
 #Input: process_list, time_quantum (Positive Integer)
-#Output_1 : Schedule list contains pairs of (time_stamp, proccess_id) indicating the time switching to that proccess_id
+#Output_1 : Schedule list contains pairs of (time_stamp, process_id) indicating the time switching to that process_id
 #Output_2 : Average Waiting Time
 #return (["to be completed, scheduling process_list on round robin policy with time_quantum"], 0.0)
 def RR_scheduling(process_list, time_quantum):
     schedule = [] #time, process_id
     current_time = 0
     waiting_time = 0
-    #sprt process list by arrival time in case input is not sorted
+    #sort process list by arrival time in case input is not sorted
     process_list = sorted(process_list, key=lambda x: x.arrive_time)
     number_of_processes = len(process_list)
 
     while len(process_list) > 0:
         #process_id, arrival_time, burst_time
         #id, arrive_time, burst_time
-        process = process_list[0]
+        #filter out processes that have not yet arrived at this time point
+        available_processes = [x for x in process_list if x.arrive_time <= current_time]
+        if len(available_processes) == 0:
+            current_time = current_time + time_quantum
+            continue
+        print 'current_time: ' + str(current_time)
+        print '\tavailable_processes' 
+        print '\t\t' + str(available_processes)
+        process = available_processes[0]
+        print '\tprocess chosen: ' + str(process)
+        print '\tfirst process in process list: ' + str(process_list[0])
         schedule += [(current_time, process.id)]
         waiting_time = waiting_time + (current_time - process.arrive_time)
         if process.burst_time > time_quantum:
             process.burst_time = process.burst_time - time_quantum
             current_time = current_time + time_quantum
             process.arrive_time = current_time
-            process_list = process_list[1:] + [process]
-            print process_list
+            process_list.remove(process)
+            process_list = process_list + [process]
+            #print 'process_list'
+            #print process_list
         else:
-            process_list = process_list[1:]
+            process_list.remove(process)
             current_time = current_time + process.burst_time
-            print process_list
+            #print 'process_list'
+            #print process_list
     average_waiting_time = waiting_time/float(number_of_processes)
     return (schedule, average_waiting_time)
 
+#Input: process_list
+#Output_1 : Schedule list contains pairs of (time_stamp, process_id) indicating the time switching to that process_id
+#Output_2 : Average Waiting Time
 def SRTF_scheduling(process_list):
+    schedule = [] #time, process_id
+    current_time = 0
+    waiting_time = 0
+    #sort process list by arrival time in case input is not sorted
+    process_list = sorted(process_list, key=lambda x: x.arrive_time)
+    number_of_processes = len(process_list)
+
+    #while len(process_list) > 0:
     return (["to be completed, scheduling process_list on SRTF, using process.burst_time to calculate the remaining time of the current process "], 0.0)
 
 def SJF_scheduling(process_list, alpha):
