@@ -10,6 +10,7 @@ Output files:
     SJF.txt
 '''
 import sys
+from operator import attrgetter
 
 input_file = 'input.txt'
 
@@ -84,14 +85,69 @@ def RR_scheduling(process_list, time_quantum):
 #Input: process_list
 #Output_1 : Schedule list contains pairs of (time_stamp, process_id) indicating the time switching to that process_id
 #Output_2 : Average Waiting Time
+#return (["to be completed, scheduling process_list on SRTF, using process.burst_time to calculate the remaining time of the current process "], 0.0)
 def SRTF_scheduling(process_list):
     schedule = [] #time, process_id
     current_time = 0
     waiting_time = 0
+    current_process = None
+
     #sort process list by arrival time in case input is not sorted
-    process_list = sorted(process_list, key=lambda x: x.arrive_time)
+    known_process_list = sorted(process_list, key=lambda x: x.arrive_time)
     number_of_processes = len(process_list)
 
+    known_arrival_times = [x.arrive_time for x in process_list]
+
+    waiting_processes = []
+
+    for next_process in known_process_list: 
+        assert current_time = current_process.arrive_time
+        if current_process == None:
+            schedule += [(next_process.arrive_time, next_process.id)]
+            current_process = next_process
+            current_time = current_process.arrive_time
+        if next_process.arrive_time > current_time + current_process.burst_time:
+            #next process has not yet arrived
+            current_time = current_time + current_process.burst_time
+            #check waiting processes
+            while len(waiting_processes) > 0:
+                assert current_time == current_process.arrive_time
+                current_process = min(waiting_processes, key=attrgetter('burst_time'))
+                waiting_processes.remove(current_process)
+                current_time = current_process.arrive_time
+                schedule += [(current_time, current_process)]
+                #current_time = current_time + current_process.burst_time
+                if next_process.arrive_time > current_time + current_process.burst_time:
+                    #next process still has not arrived
+                    print('continue through waiting processes: ' + str(waiting_processes))
+                    continue
+                elif next_process.arrive_time == current_time + current_process.burst_time:
+
+                    break
+                else:
+                    #next process has arrived
+                    #current_time = next_process.arrive_time
+                    current_process_left_time = current_time + current_process.burst_time - next_process.arrive_time
+                    if next_process.burst_time < current_process_left_time:
+                        #next process will pre-empt current process
+                        schedule += [(next_process.arrive_time, next_process.id)]
+                        pre_empted_process = current_process
+                        pre_empted_process.arrive_time = next_process.arrive_time
+                        pre_empted_process.burst_time = current_process_left_time
+                        waiting_processes += [pre_empted_process] 
+                    else:
+                        #next process does not pre-empt current process
+                        waiting_processes += [next_process]
+                    print('break out of while loop')
+                    break
+
+            current_process = next_process
+            current_time = current_process.arrive_time
+        #current process is pre-empted
+
+        #current process is not pre-empted
+        current_time = min(current_time + current_process.burst_time, next_arrival_time)
+        
     #while len(process_list) > 0:
     return (["to be completed, scheduling process_list on SRTF, using process.burst_time to calculate the remaining time of the current process "], 0.0)
 
