@@ -233,15 +233,80 @@ def SRTF_scheduling(process_list):
 #
 #return (["to be completed, scheduling SJF without using information from process.burst_time"],0.0)
 def SJF_scheduling(process_list, alpha):
+    current_time = 0
+    current_process = None
+    schedule = []
+    waiting_time = 0
+    number_of_processes = len(process_list)
     process_list = sorted(process_list, key=lambda x: x.arrive_time)
     #predicted_now = alpha*true_previous + (1-alpha)*predicted_previous
     predicted_cpu_burst_list = [5]*(len(process_list)+1)
 
     for i in range(0, len(process_list)):
-        predicted_cpu_burst_list[i+1] = [alpha*process_list[i] + (1-alpha)*predicted_cpu_burst_list[i]]
+        print('i: ' + str(i))
+        print(process_list[i].burst_time)
+        print(alpha*process_list[i].burst_time)
+        predicted_cpu_burst_list[i+1] = alpha*process_list[i].burst_time + (1-alpha)*predicted_cpu_burst_list[i]
 
     predicted_cpu_burst_list = predicted_cpu_burst_list[1:]
-    return (["to be completed, scheduling SJF without using information from process.burst_time"],0.0)
+
+    assert len(predicted_cpu_burst_list) == len(process_list)
+
+    new_process_list = process_list
+
+    for i in range(0, len(new_process_list)):
+        new_process_list[i].burst_time = predicted_cpu_burst_list[i]
+
+    print(new_process_list)
+
+    arrival_times = [x.arrive_time for x in new_process_list]
+    available_processes = []
+
+    for process in new_process_list:
+        #available_processes = [process]
+        if current_process == None:
+            current_process = process
+            current_time = current_process.arrive_time + current_process.burst_time
+            schedule += [(current_time, current_process.id)]
+            continue
+        while len(available_processes) > 0 and process.arrive_time > current_time:
+            #process hasnt arrived, loop through available processes
+            #while len(available_processes) > 0:
+            current_process = min(available_processes, key=attrgetter('burst_time'))
+            waiting_time += current_time - current_process.arrive_time
+            available_processes.remove(current_process)
+            schedule += [(current_time, current_process.id)]
+            waiting_time += current_time - current_process.arrive_time
+            current_time = current_time + current_process.burst_time
+            print('added this process: ' + str(current_process))
+        #current_time += current_process.burst_time #= max(current_time+current_process.burst_time, process.arrive_time)
+        available_processes += [process]
+        print('available processes: ' + str(available_processes))
+        ##current_process = min(available_processes, key=attrgetter('burst_time'))
+        ##schedule += [(current_time, current_process.id)]
+        #available_processes.remove(current_process)
+        ##waiting_time += current_time - current_process.arrive_time
+        ##current_time = current_time + current_process.burst_time
+    while len(available_processes) > 0:
+        #process hasnt arrived, loop through available processes
+        #while len(available_processes) > 0:
+        current_process = min(available_processes, key=attrgetter('burst_time'))
+        waiting_time += current_time - current_process.arrive_time
+        available_processes.remove(current_process)
+        schedule += [(current_time, current_process.id)]
+        waiting_time += current_time - current_process.arrive_time
+        current_time = current_time + current_process.burst_time
+        print('added this process: ' + str(current_process))
+        # current_time += current_process.burst_time
+        # #current_time = max(current_time+current_process.burst_time, process.arrive_time)
+        # available_processes += [process]
+        # print('arrival time: ' + str(process.arrive_time))
+        # print('available_processes: ' + str(available_processes))
+        # current_process = min(available_processes, key=attrgetter('burst_time'))
+        # current_time = max(current_time+current_process.burst_time, process.arrive_time)
+        # schedule += [(current_time, current_process)]
+        # new_process_list.remove(current_process)
+    return (schedule, waiting_time/float(number_of_processes))
 
 
 def read_input():
@@ -261,6 +326,8 @@ def write_output(file_name, schedule, avg_waiting_time):
             f.write(str(item) + '\n')
         f.write('average waiting time %.2f \n'%(avg_waiting_time))
 
+Q_values = range(21, 26)
+alpha_values = [0.1*x for x in range(0, 11)]
 
 def main(argv):
     process_list = read_input()
@@ -270,18 +337,22 @@ def main(argv):
     print ("simulating FCFS ----")
     FCFS_schedule, FCFS_avg_waiting_time =  FCFS_scheduling(process_list)
     write_output('FCFS.txt', FCFS_schedule, FCFS_avg_waiting_time )
-    process_list = read_input()
-    print ("simulating RR ----")
-    RR_schedule, RR_avg_waiting_time =  RR_scheduling(process_list,time_quantum = 2)
-    write_output('RR.txt', RR_schedule, RR_avg_waiting_time )
+    print('q values: ' + str(Q_values))
+    for q in Q_values:
+        process_list = read_input()
+        print ("simulating RR ----")
+        RR_schedule, RR_avg_waiting_time =  RR_scheduling(process_list,time_quantum = q)
+        write_output('RR_' + str(q) + '.txt', RR_schedule, RR_avg_waiting_time )
     process_list = read_input()
     print ("simulating SRTF ----")
     SRTF_schedule, SRTF_avg_waiting_time =  SRTF_scheduling(process_list)
     write_output('SRTF.txt', SRTF_schedule, SRTF_avg_waiting_time )
-    process_list = read_input()
-    print ("simulating SJF ----")
-    SJF_schedule, SJF_avg_waiting_time =  SJF_scheduling(process_list, alpha = 0.5)
-    write_output('SJF.txt', SJF_schedule, SJF_avg_waiting_time )
+    print('alpha values: ' + str(alpha_values))
+    for alph in alpha_values:
+        process_list = read_input()
+        print ("simulating SJF ----")
+        SJF_schedule, SJF_avg_waiting_time =  SJF_scheduling(process_list, alpha = alph)
+        write_output('SJFnew_' + str(alph) + '.txt', SJF_schedule, SJF_avg_waiting_time )
 
 if __name__ == '__main__':
     main(sys.argv[1:])
