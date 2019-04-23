@@ -100,56 +100,108 @@ def SRTF_scheduling(process_list):
 
     waiting_processes = []
 
+    print('this is the known process list: ' + str(known_process_list))
+
     for next_process in known_process_list: 
-        assert current_time = current_process.arrive_time
+        print('this is the current time: ' + str(current_time))
+        print('these are the waiting processes: ' + str(waiting_processes))
+        print('this is the next process: ' + str(next_process))
+        #assert current_time == current_process.arrive_time
         if current_process == None:
             schedule += [(next_process.arrive_time, next_process.id)]
+            print('added next process to schedule 0: ' + str(next_process))
             current_process = next_process
             current_time = current_process.arrive_time
+            continue
         if next_process.arrive_time > current_time + current_process.burst_time:
             #next process has not yet arrived
-            current_time = current_time + current_process.burst_time
+            #current process will run to completion
+            #current_time = current_time + current_process.burst_time
             #check waiting processes
-            while len(waiting_processes) > 0:
-                assert current_time == current_process.arrive_time
-                current_process = min(waiting_processes, key=attrgetter('burst_time'))
-                waiting_processes.remove(current_process)
+            if len(waiting_processes) == 0:
+                current_process = next_process
                 current_time = current_process.arrive_time
-                schedule += [(current_time, current_process)]
-                #current_time = current_time + current_process.burst_time
-                if next_process.arrive_time > current_time + current_process.burst_time:
-                    #next process still has not arrived
-                    print('continue through waiting processes: ' + str(waiting_processes))
-                    continue
-                elif next_process.arrive_time == current_time + current_process.burst_time:
-
-                    break
-                else:
-                    #next process has arrived
-                    #current_time = next_process.arrive_time
-                    current_process_left_time = current_time + current_process.burst_time - next_process.arrive_time
-                    if next_process.burst_time < current_process_left_time:
-                        #next process will pre-empt current process
-                        schedule += [(next_process.arrive_time, next_process.id)]
-                        pre_empted_process = current_process
-                        pre_empted_process.arrive_time = next_process.arrive_time
-                        pre_empted_process.burst_time = current_process_left_time
-                        waiting_processes += [pre_empted_process] 
+                schedule += [(current_time, current_process.id)]
+                print('\tlength of waiting processes is 0, added to schedule: ' + str(current_process))
+                continue
+            else:
+                while len(waiting_processes) > 0:
+                    #assert current_time == current_process.arrive_time
+                    current_time = current_time + current_process.burst_time
+                    current_process = min(waiting_processes, key=attrgetter('burst_time'))
+                    waiting_processes.remove(current_process)
+                    schedule += [(current_time, current_process.id)]
+                    print('\tlength of waiting processes is > 0, added to schedule: ' + str(current_process))
+                    waiting_time = waiting_time + (current_time - current_process.arrive_time)
+                    #current_time = current_time + current_process.burst_time
+                    if next_process.arrive_time > current_time + current_process.burst_time:
+                        #next process still has not arrived
+                        print('\t\tcontinue through waiting processes: ' + str(waiting_processes))
+                        continue
                     else:
-                        #next process does not pre-empt current process
-                        waiting_processes += [next_process]
-                    print('break out of while loop')
-                    break
+                        #next process has arrived
+                        #current_time = next_process.arrive_time
+                        current_process_left_time = current_time + current_process.burst_time - next_process.arrive_time
+                        if next_process.burst_time < current_process_left_time:
+                            #next process will pre-empt current process
+                            print('\t\t\tcurrent time: ' + str(current_time))
+                            print('\t\t\tcurrent process left time: ' + str(current_process_left_time))
+                            print('\t\t\tcurrent process: ' + str(current_process))
+                            schedule += [(next_process.arrive_time, next_process.id)]
+                            pre_empted_process = current_process
+                            pre_empted_process.arrive_time = next_process.arrive_time
+                            pre_empted_process.burst_time = current_process_left_time
+                            waiting_processes += [pre_empted_process] 
+                            print('\t\t\tadded this process to waiting: ' + str(pre_empted_process))
+                            current_process = next_process
+                            current_time = current_process.arrive_time
+                            print('\t\t\tnext process pre-empts current one, added to schedule: ' + str(current_process))
+                        else:
+                            #next process does not pre-empt current process
+                            waiting_processes += [next_process]
+                            print('\t\t\tadded next process to waiting: ' + str(next_process))
+                        print('\t\tbreak out of while loop: ' + str(waiting_processes))
+                        break
 
-            current_process = next_process
-            current_time = current_process.arrive_time
+        else:
+            #next process comes at a time when current process is still executing
+            current_process_left_time = current_time + current_process.burst_time - next_process.arrive_time
+            if next_process.burst_time < current_process_left_time:
+                #next process will pre-empt current process
+                print('current time 2: ' + str(current_time))
+                print('current process left time 2: ' + str(current_process_left_time))
+                print('current process 2: ' + str(current_process))
+                schedule += [(next_process.arrive_time, next_process.id)]
+                pre_empted_process = current_process
+                pre_empted_process.arrive_time = next_process.arrive_time
+                pre_empted_process.burst_time = current_process_left_time
+                waiting_processes += [pre_empted_process] 
+                print('added this process to waiting 2: ' + str(pre_empted_process))
+                current_process = next_process
+                current_time = current_process.arrive_time
+                print('next process pre-empts current one, added to schedule 2: ' + str(current_process))
+            else:
+                #next process does not pre-empt current process
+                waiting_processes += [next_process]
+                print('added next process to waiting 2: ' + str(next_process))
+            #current_process = next_process
+            #current_time = current_process.arrive_time
         #current process is pre-empted
 
         #current process is not pre-empted
-        current_time = min(current_time + current_process.burst_time, next_arrival_time)
-        
+        #current_time = min(current_time + current_process.burst_time, next_arrival_time)
+    #clear up all remaining waiting processes
+    while len(waiting_processes) > 0:
+        print('waiting list left: ' + str(waiting_processes))
+        current_process = min(waiting_processes, key=attrgetter('burst_time'))
+        waiting_processes.remove(current_process)
+        schedule += [(current_time, current_process.id)]
+        print('added process from waiting to schedule: ' + str(current_process))
+        waiting_time = waiting_time + (current_time - current_process.arrive_time)
+        current_time = current_time + current_process.burst_time
+                    
     #while len(process_list) > 0:
-    return (["to be completed, scheduling process_list on SRTF, using process.burst_time to calculate the remaining time of the current process "], 0.0)
+    return (schedule, waiting_time/float(number_of_processes))
 
 def SJF_scheduling(process_list, alpha):
     return (["to be completed, scheduling SJF without using information from process.burst_time"],0.0)
@@ -180,12 +232,15 @@ def main(argv):
     print ("simulating FCFS ----")
     FCFS_schedule, FCFS_avg_waiting_time =  FCFS_scheduling(process_list)
     write_output('FCFS.txt', FCFS_schedule, FCFS_avg_waiting_time )
+    process_list = read_input()
     print ("simulating RR ----")
     RR_schedule, RR_avg_waiting_time =  RR_scheduling(process_list,time_quantum = 2)
     write_output('RR.txt', RR_schedule, RR_avg_waiting_time )
+    process_list = read_input()
     print ("simulating SRTF ----")
     SRTF_schedule, SRTF_avg_waiting_time =  SRTF_scheduling(process_list)
     write_output('SRTF.txt', SRTF_schedule, SRTF_avg_waiting_time )
+    process_list = read_input()
     print ("simulating SJF ----")
     SJF_schedule, SJF_avg_waiting_time =  SJF_scheduling(process_list, alpha = 0.5)
     write_output('SJF.txt', SJF_schedule, SJF_avg_waiting_time )
