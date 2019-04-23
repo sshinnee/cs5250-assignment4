@@ -100,8 +100,15 @@ def SRTF_scheduling(process_list):
 
     waiting_processes = []
 
-    print('this is the known process list: ' + str(known_process_list))
+    number_of_waiting_processes = 0
+    number_of_preemptive_processes = 0
 
+    count = 0
+    print('this is the known process list: ')
+    for item in known_process_list:
+        count += 1
+        print(str(count) + ': ' + str(item))
+    
     for next_process in known_process_list: 
         print('this is the current time: ' + str(current_time))
         print('these are the waiting processes: ' + str(waiting_processes))
@@ -112,6 +119,7 @@ def SRTF_scheduling(process_list):
             print('added next process to schedule 0: ' + str(next_process))
             current_process = next_process
             current_time = current_process.arrive_time
+            number_of_preemptive_processes += 1
             continue
         if next_process.arrive_time > current_time + current_process.burst_time:
             #next process has not yet arrived
@@ -123,6 +131,7 @@ def SRTF_scheduling(process_list):
                 current_time = current_process.arrive_time
                 schedule += [(current_time, current_process.id)]
                 print('\tlength of waiting processes is 0, added to schedule: ' + str(current_process))
+                number_of_preemptive_processes += 1
                 continue
             else:
                 while len(waiting_processes) > 0:
@@ -131,12 +140,20 @@ def SRTF_scheduling(process_list):
                     current_process = min(waiting_processes, key=attrgetter('burst_time'))
                     waiting_processes.remove(current_process)
                     schedule += [(current_time, current_process.id)]
+                    number_of_waiting_processes += 1
                     print('\tlength of waiting processes is > 0, added to schedule: ' + str(current_process))
                     waiting_time = waiting_time + (current_time - current_process.arrive_time)
+                    print('\tthis process waited for: ' + str(current_time - current_process.arrive_time))
                     #current_time = current_time + current_process.burst_time
                     if next_process.arrive_time > current_time + current_process.burst_time:
                         #next process still has not arrived
                         print('\t\tcontinue through waiting processes: ' + str(waiting_processes))
+                        if len(waiting_processes) == 0:
+                            current_process = next_process
+                            current_time = current_process.arrive_time
+                            schedule += [(current_time, current_process.id)]
+                            print('\t\t\tadded process to schedule (new arrival): ' + str(current_process))
+                            number_of_preemptive_processes += 1
                         continue
                     else:
                         #next process has arrived
@@ -148,6 +165,7 @@ def SRTF_scheduling(process_list):
                             print('\t\t\tcurrent process left time: ' + str(current_process_left_time))
                             print('\t\t\tcurrent process: ' + str(current_process))
                             schedule += [(next_process.arrive_time, next_process.id)]
+                            number_of_preemptive_processes += 1
                             pre_empted_process = current_process
                             pre_empted_process.arrive_time = next_process.arrive_time
                             pre_empted_process.burst_time = current_process_left_time
@@ -162,6 +180,8 @@ def SRTF_scheduling(process_list):
                             print('\t\t\tadded next process to waiting: ' + str(next_process))
                         print('\t\tbreak out of while loop: ' + str(waiting_processes))
                         break
+            
+                #waiting_processes += [next_process]
 
         else:
             #next process comes at a time when current process is still executing
@@ -172,6 +192,7 @@ def SRTF_scheduling(process_list):
                 print('current process left time 2: ' + str(current_process_left_time))
                 print('current process 2: ' + str(current_process))
                 schedule += [(next_process.arrive_time, next_process.id)]
+                number_of_preemptive_processes += 1
                 pre_empted_process = current_process
                 pre_empted_process.arrive_time = next_process.arrive_time
                 pre_empted_process.burst_time = current_process_left_time
@@ -192,18 +213,34 @@ def SRTF_scheduling(process_list):
         #current_time = min(current_time + current_process.burst_time, next_arrival_time)
     #clear up all remaining waiting processes
     while len(waiting_processes) > 0:
+        current_time = current_time + current_process.burst_time
         print('waiting list left: ' + str(waiting_processes))
         current_process = min(waiting_processes, key=attrgetter('burst_time'))
         waiting_processes.remove(current_process)
         schedule += [(current_time, current_process.id)]
+        number_of_waiting_processes += 1
         print('added process from waiting to schedule: ' + str(current_process))
+        print('this process waited for: ' + str(current_time - current_process.arrive_time))
         waiting_time = waiting_time + (current_time - current_process.arrive_time)
-        current_time = current_time + current_process.burst_time
-                    
+        
+    print('total waiting time: ' + str(waiting_time))  
+    print('total number of processes: ' + str(number_of_processes)) 
+    print('total number of preemptive processes: ' + str(number_of_preemptive_processes))
+    print('total number of waiting processes: ' + str(number_of_waiting_processes)) 
     #while len(process_list) > 0:
     return (schedule, waiting_time/float(number_of_processes))
 
+#
+#return (["to be completed, scheduling SJF without using information from process.burst_time"],0.0)
 def SJF_scheduling(process_list, alpha):
+    process_list = sorted(process_list, key=lambda x: x.arrive_time)
+    #predicted_now = alpha*true_previous + (1-alpha)*predicted_previous
+    predicted_cpu_burst_list = [5]*(len(process_list)+1)
+
+    for i in range(0, len(process_list)):
+        predicted_cpu_burst_list[i+1] = [alpha*process_list[i] + (1-alpha)*predicted_cpu_burst_list[i]]
+
+    predicted_cpu_burst_list = predicted_cpu_burst_list[1:]
     return (["to be completed, scheduling SJF without using information from process.burst_time"],0.0)
 
 
@@ -217,6 +254,7 @@ def read_input():
                 exit()
             result.append(Process(int(array[0]),int(array[1]),int(array[2])))
     return result
+
 def write_output(file_name, schedule, avg_waiting_time):
     with open(file_name,'w') as f:
         for item in schedule:
